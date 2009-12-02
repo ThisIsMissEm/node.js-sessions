@@ -1,69 +1,39 @@
 // Create a server to demo/mockup the session management API
 var http = require('http'),
-    puts = require("sys").puts,
-    sessions = require('./Sessions'),
-    port = 8080,
-    hostname = "" // listen on all addresses
+    sys = require('sys'),
+    Sessions = require('./Sessions');
 
-session = sessions.create({domain: ""});
-
-session.addListener("destroy", function(session){
-    puts("Session Ended "+session.id);
-});
     
-session.addListener("change", function(data){
-    putJSON(data);
+var SessionManager = new Sessions.manager({
+    lifetime: 1
 });
 
+SessionManager.addListener("create", function(sid){
+    sys.puts("Created Session "+sid);
+});
+    
+SessionManager.addListener("change", function(data){
+    sys.puts(data);
+});
 
-http.createServer(requestHandler).listen(port, hostname)
+SessionManager.addListener("destroy", function(sid){
+    sys.puts("Destroyed Session "+sid);
+});
 
-function putJSON(data){
-    puts(JSON.stringify(data));
-}
 
-// handle incoming requests
-function requestHandler(req, resp) {
-    var session, body, options, sessionID
+http.createServer(function(req, resp) {
     
-    session = sessions.lookupOrCreate(req);
+    var session = new Sessions.create(SessionManager);
     
-    
-    
-    // The returned session object has the following properties:
-    // .data, which is an (initially empty) object that you use to store your session data
-    // .id, which is the session's ID (read-only)
-    // .setCookieHeader(), which gives the value for the setCookieHeader which you have to set on the server response
-    // we will use the session to store the visitor's browsing history
-    
-    tmp = session.get('history') || [];
-    tmp.push(req.uri.path);
-    
-    putJSON(tmp);
-    
-    session.set('history', tmp);
-    
-    puts((+new Date)+"\tChanged Session:\t"+session.id+"\tEnds At: "+session.expiration);
-    
-    // we actually don't care about the URL the user requested, everything gets the same 'hello world' page.
-    // but we store the pages the user visits in the session so we can show breadcrumbs on every page
-    body = createHelloWorldPage(session.get('history'));
+    var ret = "<p> Hi there, here is your browsing history: </p><ul>";
+    ret += "</ul><p> Here are some other fascinating pages you can visit on our lovely site: </p><ul><li><a href=foo>foo</a><li><a href=bar>bar</a><li><a href=quux>quux</a></ul>";
 
-    // send the Set-Cookie header value with the response
     resp.sendHeader(200, {
         'Content-Type': 'text/html',
-        'Set-Cookie': session
+        'Set-Cookie': session.getHeader()
     });
-    resp.sendBody(body);
-    resp.finish();
-}
-
-
-
-function createHelloWorldPage(history) {
-    ret = "<p> Hi there, here is your browsing history: </p><ul>";
-    ret += JSON.stringify(history);
-    ret += "</ul><p> Here are some other fascinating pages you can visit on our lovely site: </p><ul><li><a href=foo>foo</a><li><a href=bar>bar</a><li><a href=quux>quux</a></ul>";
     
-    return ret;
-}
+    resp.sendBody(ret);
+    resp.finish();
+    
+}).listen("8008", "localhost");
