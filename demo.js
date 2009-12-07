@@ -36,4 +36,4 @@ http.createServer(function(req, resp) {
     resp.sendBody(ret);
     resp.finish();
     
-}).listen("8080", "localhost");
+}).listen("8080", "");
