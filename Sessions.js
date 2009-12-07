@@ -19,18 +19,6 @@
 		sys.puts("\033[0;37m"+timestamp()+"\033[0m\t"+Array.prototype.join.call(arguments, " ")+"\033[0m ");
 	};
 	
-	
-	
-	function size(obj){
-		var len = 0;
-		for(var x in obj){
-			if(Object.hasOwnProperty.call(obj, x)){
-				++len;
-			}
-		}
-		return len;
-	}
-	
 	// The Session Manager:
 
 	var SessionManager = function(options){
@@ -166,7 +154,6 @@
 		
 		sys.log(">>> Cleaning Up.");
 		sys.puts(sys.inspect(this._sessionStore));
-		sys.log("\033[0;33m=== Sessions:"+ size(this._sessionStore));
 		
 		for(var sid in this._sessionStore){
 			if(Object.prototype.hasOwnProperty.call(this._sessionStore, sid)){
@@ -183,8 +170,6 @@
 				}
 			}
 		}
-		
-		sys.log("\033[0;33m=== Sessions:"+ size(this._sessionStore));
 		
 		if(next < Infinity && next >= 0){
 			sys.log(">>> Next Cleanup at: "+timestamp(next));
