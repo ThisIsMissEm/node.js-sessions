@@ -2,21 +2,17 @@
 	var sys = require("sys"),
 	    cookies = require("./http-cookie");
 	
-	function pad(value, len) {
-		var len = len || 2;
-		var value = new String(value);
-
-		if(value.length < len){
-			while(value.length < len){
-				value = "0"+value;
-			}
+	function pad(len, str, padder){
+		var padder = padder || "0";
+		while(str.length < len){
+			str = padder + str;
 		}
-		return value;
+		return str;
 	}
 	
 	function timestamp(time){
 		var time = time ? new Date(time) : new Date;
-		return pad(time.getUTCDate())+"/"+pad(time.getMonth())+"/"+time.getFullYear()+" "+pad(time.getHours())+":"+pad(time.getMinutes())+":"+pad(time.getSeconds())+":"+pad(time.getMilliseconds(), 4);
+		return pad(2, time.getUTCDate())+"/"+pad(2, time.getMonth())+"/"+time.getFullYear()+" "+pad(2, time.getHours())+":"+pad(2, time.getMinutes())+":"+pad(2, time.getSeconds())+":"+pad(4, time.getMilliseconds());
 	}
 	
 	sys.log = function(){
