@@ -40,11 +40,12 @@
 	var SessionManager = function(options){
 		var options = options || {};
 		
-		this.domain				= options.domain		|| '';
-		this.path				= options.path 		|| '/';
-		this.persistent		= options.persistent || true;
-		this.lifetime			= options.lifetime 	|| 86400;
-	
+		this.domain          = options.domain || '';
+		this.path            = options.path || '/';
+		this.persistent      = options.persistent || true;
+		this.lifetime        = options.lifetime || 86400;
+		this.secure          = options.secure || false;
+		this.httpOnly        = options.httpOnly || false;
 		this._sessionStore = {};
 		
 		process.EventEmitter.call(this);
@@ -83,7 +84,9 @@
 		resp.setCookie("SID", _sid, {
 			domain: this.domain,
 			path: this.path,
-			expires: session.expires
+			expires: session.expires,
+			secure: this.secure,
+			httpOnly: this.httpOnly
 		});
 		
 		sys.log("\033[0;32m+++ "+_sid+"\tExpires: "+timestamp(session.expires));
