@@ -9,8 +9,7 @@
 // 	Code based on http://github.com/jed/cookie-node/blob/master/cookie-node.js
 
 
-var http = require( "http" ),
-    sys = require( "sys" );
+var http = require( "http" ), sys = require( "sys" );
 
 function pad(len, str, padder){
 	var padder = padder || "0";
@@ -70,11 +69,11 @@ process.mixin(http.ServerResponse.prototype, {
 		if ( options.domain ){
 			cookie += " domain="+options.domain+";";
 		}
-      if ( options.secure ){
-      	cookie += "; secure";
+	  if ( options.secure ){
+	  		cookie += "; secure";
 		}
 		if ( options.httpOnly ){
-      	cookie += "; httpOnly";
+	  		cookie += "; httpOnly";
 		}
 		this.cookies.push(cookie);
 	},
