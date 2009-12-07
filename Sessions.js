@@ -59,28 +59,6 @@
 		var session = {
 			sid: _sid,
 			expires: Math.floor((+new Date) + this.lifetime*1000),
-			/*getHeader: function(){
-				var parts = ['SID=' + this.sid];
-				if(manager.path){
-					parts.push('path=' + manager.path);
-				}
-				if(manager.domain){
-					parts.push('domain=' + manager.domain);
-				}
-				if(manager.persistent){
-					function pad(n) {
-						return n > 9 ? '' + n : '0' + n;
-					}
-					
-					var d = new Date(this.expires);
-					var wdy = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-					var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-					
-					parts.push('expires=' + wdy[d.getUTCDay()] + ', ' + pad(d.getUTCDate()) + '-' + mon[d.getUTCMonth()] + '-' + d.getUTCFullYear() + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + ' GMT');
-				}
-				return parts.join('; ');
-			},*/
-			
 			data: function(key, value){
 				if(value){
 					manager.setData(this.sid, key, value);
@@ -154,18 +132,20 @@
 		var session = this.get(sid);
 		session.expires = Math.floor((+new Date) + this.lifetime*1000);
 		if(key){
-			return session._data[key];
+			return session._data[key] ? session._data[key] : null;
 		} else {
 			return session._data;
 		}
 	};
 	
 	SessionManager.prototype.setData = function(sid, key, value){
-		var session = this.get(sid);
+		sys.log(">>> Set Data: "+sid+"[\033[0;32m"+key+"\033[0;0m] = "+JSON.stringify(value));
+		
+		var session = this._sessionStore[sid];
 		session._data[key] = value;
 		session.expires = Math.floor((+new Date) + this.lifetime*1000);
 		
-		this.emit("change", this.sid, this._data);
+		this.emit("change", sid, session._data);
 		return session._data[key];
 	};
 	
