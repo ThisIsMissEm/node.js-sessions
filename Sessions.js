@@ -1,6 +1,6 @@
 (function(){
-
-	var sys = require("sys");
+	var sys = require("sys"),
+	    cookies = require("./http-cookie");
 	
 	function pad(value, len) {
 		var len = len || 2;
@@ -52,14 +52,14 @@
 
 	sys.inherits(SessionManager, process.EventEmitter);
 
-	SessionManager.prototype.createSession = function(){
-		var _sid = this.generateId();
+	SessionManager.prototype.create = function(resp){
+		var _sid = this._sid();
 		var manager = this;
 		
 		var session = {
 			sid: _sid,
 			expires: Math.floor((+new Date) + this.lifetime*1000),
-			getHeader: function(){
+			/*getHeader: function(){
 				var parts = ['SID=' + this.sid];
 				if(manager.path){
 					parts.push('path=' + manager.path);
@@ -79,23 +79,34 @@
 					parts.push('expires=' + wdy[d.getUTCDay()] + ', ' + pad(d.getUTCDate()) + '-' + mon[d.getUTCMonth()] + '-' + d.getUTCFullYear() + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + ' GMT');
 				}
 				return parts.join('; ');
-			},
+			},*/
+			
 			data: function(key, value){
 				if(value){
-					this._data[key] = value;
-					manager.emit("change", this.sid, this._data);
+					manager.setData(this.sid, key, value);
 				}
-				this.expires = Math.floor((+new Date) + manager.lifetime*1000);
-				return this._data[key];
+				
+				if(key){
+					return manager.getData(this.sid, key);
+				} else {
+					return manager.getData(this.sid);
+				}
 			},
-			destroy: function(){
-				manager.destroySession(this.sid);
+			destroy: function(resp){
+				resp.clearCookie("SID");
+				manager.destroy(this.sid);
 			},
 			_data: {}
 		};
 		
 		this._sessionStore[_sid] = session;
 		this.emit("create", _sid);
+		
+		resp.setCookie("SID", _sid, {
+			domain: this.domain,
+			path: this.path,
+			expires: session.expires
+		});
 		
 		sys.log("\033[0;32m+++ "+_sid+"\tExpires: "+timestamp(session.expires));
 		
@@ -106,28 +117,60 @@
 		return this._sessionStore[_sid];
 	};
 	
-	SessionManager.prototype.lookupSession = function(sid){
-		return this._sessionStore[sid] || null;
-	};
-	
-	SessionManager.prototype.lookupOrCreate = function(req){
-		var sid;
+	SessionManager.prototype.lookup = function(req){
+		var sid = req.getCookie("SID");
 		
-		if (req.headers.cookie && (sid = (/SID=([^ ,;]*)/.exec(req.headers.cookie))[1]) && this._sessionStore[sid]){
+		if(this._sessionStore[sid]){
 			sys.log(">>> Retrieved Session. "+sid);
+			
 			this._sessionStore[sid].expires = Math.floor((+new Date) + this.lifetime*1000);
 			return this._sessionStore[sid];
 		} else {
-			return this.createSession();
+			return null;
 		}
 	};
 	
-	SessionManager.prototype.destroySession = function(sid){
+	SessionManager.prototype.lookupOrCreate = function(req, resp){
+		var session = this.lookup(req);
+		return session ? session : this.create(resp);
+	};
+	
+	SessionManager.prototype.has = function(req){
+		return this.lookup(req) ? true : false;
+	};
+	
+	
+	SessionManager.prototype.get = function(sid){
+		return this._sessionStore[sid];
+	};
+	
+	SessionManager.prototype.destroy = function(sid){
 		this.emit("destroy", sid);
 		delete this._sessionStore[sid];
 	};
 	
-	SessionManager.prototype.generateId = function(){
+	
+	SessionManager.prototype.getData = function(sid, key){
+		var session = this.get(sid);
+		session.expires = Math.floor((+new Date) + this.lifetime*1000);
+		if(key){
+			return session._data[key];
+		} else {
+			return session._data;
+		}
+	};
+	
+	SessionManager.prototype.setData = function(sid, key, value){
+		var session = this.get(sid);
+		session._data[key] = value;
+		session.expires = Math.floor((+new Date) + this.lifetime*1000);
+		
+		this.emit("change", this.sid, this._data);
+		return session._data[key];
+	};
+	
+	
+	SessionManager.prototype._sid = function(){
 		var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', // base64 alphabet
 			 ret = '';
 	
@@ -155,7 +198,7 @@
 				// Using a Max Difference because timers can be delayed by a few milliseconds.
 				if(sessionExpiration - now < 100){
 					sys.log("\033[0;31m--- "+sid);
-					this.destroySession(sid);
+					this.destroy(sid);
 				} else {
 					next = next > sessionExpiration ? sessionExpiration : next;
 				}
@@ -177,6 +220,15 @@
 			sys.log(">>> No More Cleanups. ");
 			sys.puts(sys.inspect(this._sessionStore));
 		}
+	};
+	
+	SessionManager.prototype.serialize = function(){
+		sys.debug("SessionManager.serialize is unstable.");
+		return JSON.stringify(this._sessionStore);
+	};
+	SessionManager.prototype.deserialize = function(string){
+		sys.debug("SessionManager.deserialize is unstable.");
+		this._sessionStore = JSON.parse(string);
 	};
 	
 	exports.manager = SessionManager;

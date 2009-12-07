@@ -21,18 +21,17 @@ SessionManager.addListener("destroy", function(sid){
 });
 
 http.createServer(function(req, resp) {
-    
-    var session = SessionManager.lookupOrCreate(req);
-    
-    session.data("test", (+new Date));
+    var session = SessionManager.lookupOrCreate(req, resp);
     
     var ret = "<p> Hi there, here is your browsing history: </p><ul>";
     ret += "</ul><p> Here are some other fascinating pages you can visit on our lovely site: </p><ul><li><a href=foo>foo</a><li><a href=bar>bar</a><li><a href=quux>quux</a></ul>";
 
     resp.sendHeader(200, {
-        'Content-Type': 'text/html',
-        'Set-Cookie': session.getHeader(),
+        'Content-Type': 'text/html'
+        // How awesome am I? no need to set-cookie here!
     });
+    
+    
     
     resp.sendBody(ret);
     resp.finish();
